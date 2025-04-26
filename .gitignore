@@ -1,0 +1,3 @@
+build/
+sdkconfig*
+esp-idf-lib/
