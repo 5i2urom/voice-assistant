@@ -22,12 +22,3 @@ void set_wifi_credentials(const char *ssid, const char *password);
 
 // Обновление данных для Wi-Fi, если они изменились
 void update_wifi_credentials(const char *new_ssid, const char *new_password);
-
-// Получение IP-адреса сервера из NVS
-esp_err_t get_server_ip(char *ip_address, size_t len);
-
-// Установка IP-адреса сервера в NVS
-void set_server_ip(const char *ip_address);
-
-// Обновление IP-адреса сервера в NVS, если он изменился
-esp_err_t update_server_ip(const char *new_ip_address);

@@ -14,37 +14,58 @@ uint8_t ble_addr_type;
 void ble_app_advertise(void);
 
 extern char ip_str[16];
-extern int16_t threshold_noise_level;
 
+static const char *TAG = "wifi-ble";
 
-static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
-    char *data = (char *)ctxt->om->om_data;
+static int device_write(uint16_t conn_handle, uint16_t attr_handle, 
+                      struct ble_gatt_access_ctxt *ctxt, void *arg) {
+    // Максимальные длины согласно вашей реализации
+    #define MAX_SSID_LEN 32
+    #define MAX_PASS_LEN 64
+    
+    struct os_mbuf *om = ctxt->om;
+    char buf[MAX_SSID_LEN + MAX_PASS_LEN + 1]; // +1 для нуль-терминатора
     char *ssid = NULL;
     char *password = NULL;
 
-    if (strncmp(data, "wifi ", 5) == 0) {
-        char *ptr = data + 5;
-        ssid = ptr;
+    // 1. Проверяем длину данных
+    if (om->om_len < 5 || om->om_len > sizeof(buf)-1) {
+        return -1;
+    }
 
-        while (*ptr && *ptr != ':') {
-            ptr++;
-        }
+    // 2. Копируем данные с нуль-терминацией
+    memcpy(buf, om->om_data, om->om_len);
+    buf[om->om_len] = '\0';
 
-        if (*ptr == ':') {
-            *ptr = '\0';
-            password = ptr + 1;            
-        }
-        update_wifi_credentials(ssid, password);
-    } else if (strncmp(data, "noise ", 5) == 0) {
-        threshold_noise_level = atoi(data + 6);
-        if (threshold_noise_level <= 0) return -1;
-        nvs_handle_t nvs_handle;
-        nvs_open("storage", NVS_READWRITE, &nvs_handle);
-        nvs_set_i16(nvs_handle, "noise_level", threshold_noise_level);
-        nvs_commit(nvs_handle);
-        nvs_close(nvs_handle);
-    } else return -1;
+    // 3. Проверяем префикс
+    if (strncmp(buf, "wifi ", 5) != 0) {
+        return -1;
+    }
 
+    // 4. Парсим данные
+    char *ptr = buf + 5;
+    char *colon = strchr(ptr, ':');
+    
+    // 5. Проверяем наличие разделителя
+    if (!colon) {
+        ESP_LOGE(TAG, "No ':' delimiter found");
+        return -1;
+    }
+
+    // 6. Проверяем длины
+    size_t ssid_len = colon - ptr;
+    size_t pass_len = strlen(colon + 1);
+    
+    if (ssid_len >= MAX_SSID_LEN || pass_len >= MAX_PASS_LEN) {
+        return -1;
+    }
+
+    // 7. Разделяем строку
+    *colon = '\0';
+    ssid = ptr;
+    password = colon + 1;
+
+    update_wifi_credentials(ssid, password);
     return 0;
 }
 
