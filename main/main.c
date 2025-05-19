@@ -12,7 +12,9 @@
 #include <esp_wifi.h>
 #include "nvs_flash.h"
 #include "nvs.h"
-#include "server-connect.h"
+#include "wifi-connect.h"    
+#include "network-monitor.h"
+#include "wake_word_detector.h"
 
 #define I2C_MASTER_SCL_IO           GPIO_NUM_22     
 #define I2C_MASTER_SDA_IO           GPIO_NUM_21      
@@ -80,17 +82,6 @@ void dht_task(void *pvParameters) {
     } while (1);
 }
 
-void init_ble() {
-    nimble_port_init();                         // Инициализация BLE-стека
-    ble_svc_gap_device_name_set("BLE-Server");  // Установка имени устройства
-    ble_svc_gap_init();                         // Инициализация GAP-сервиса
-    ble_svc_gatt_init();                        // Инициализация GATT-сервиса
-    ble_gatts_count_cfg(gatt_svcs);             // Подсчёт сервисов и характеристик
-    ble_gatts_add_svcs(gatt_svcs);              // Добавление сервисов
-    ble_hs_cfg.sync_cb = ble_app_on_sync;       // Установка callback для синхронизации BLE
-    nimble_port_freertos_init(host_task);       // Запуск основной задачи NimBLE
-}
-
 void app_main(void) {    
     nvs_flash_init();
     // lcd_mutex = xSemaphoreCreateMutex();
@@ -113,10 +104,11 @@ void app_main(void) {
 
     init_ble();
     init_wifi();
+
     connect_to_wifi();
-    
-    // while (strlen(ip_str) == 0) {
-    //     vTaskDelay(pdMS_TO_TICKS(1000));
-    // }
-    
+
+    start_network_monitor();    
+
+    start_wake_word_task();
+
 }

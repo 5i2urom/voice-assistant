@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "esp_err.h"
+#include "freertos/event_groups.h"
+#include <stdbool.h>
 
-#define WIFI_SSID_KEY "wifi_ssid"
-#define WIFI_PASS_KEY "wifi_pass"
-#define SERVER_IP_KEY "server_ip"
+#define WIFI_CONNECTED_BIT BIT0
 
 // Инициализация Wi-Fi
 void init_wifi(void);
@@ -22,3 +22,7 @@ void set_wifi_credentials(const char *ssid, const char *password);
 
 // Обновление данных для Wi-Fi, если они изменились
 void update_wifi_credentials(const char *new_ssid, const char *new_password);
+
+EventGroupHandle_t get_wifi_event_group(void);
+
+bool is_wifi_connected(void);

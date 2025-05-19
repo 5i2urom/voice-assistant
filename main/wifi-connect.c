@@ -6,16 +6,19 @@
 #include <string.h>
 #include "wifi-connect.h"
 #include "esp_log.h"
+#include "network-monitor.h"
 
 #define MAX_RETRY_COUNT 5
+#define WIFI_SSID_KEY "wifi_ssid"
+#define WIFI_PASS_KEY "wifi_pass"
+#define SERVER_IP_KEY "server_ip"
 
 static int retry_count = 0;
 static bool wifi_updating = false;
-
 static SemaphoreHandle_t wifi_connect_mutex = NULL;
 static TimerHandle_t reconnect_timer = NULL;
+static EventGroupHandle_t wifi_event_group = NULL;
 
-char ip_str[16] = {0};
 static const char *TAG = "wifi-connect";
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
@@ -28,6 +31,8 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
             return;
         }
 
+        stop_ping_timer();
+
         xSemaphoreTake(wifi_connect_mutex, portMAX_DELAY);
 
         if (retry_count < MAX_RETRY_COUNT) {
@@ -36,10 +41,18 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
             ++retry_count;
         } else {
             xTimerStart(reconnect_timer, 0);
+            xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
             ESP_LOGW(TAG, "Max retry count reached. Reconnecting in 60 seconds...");
         }
 
         xSemaphoreGive(wifi_connect_mutex);
+    }
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+
+        start_ping_timer();
     }
 }
 
@@ -55,10 +68,11 @@ void init_wifi() {
     esp_event_loop_create_default();
     esp_netif_create_default_wifi_sta();
 
+    wifi_event_group = xEventGroupCreate();
     wifi_connect_mutex = xSemaphoreCreateMutex();
     reconnect_timer = xTimerCreate(
         "wifi_connect_timer",
-        pdMS_TO_TICKS(60000),
+        pdMS_TO_TICKS(30000),
         pdFALSE,
         NULL,
         reconnect_callback
@@ -113,6 +127,7 @@ esp_err_t connect_to_wifi() {
         .sta = {
             .ssid = "",
             .password = "",
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
         },
     };
     strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
@@ -163,4 +178,13 @@ void update_wifi_credentials(const char *new_ssid, const char *new_password) {
     xSemaphoreTake(wifi_connect_mutex, portMAX_DELAY);
     wifi_updating = false;
     xSemaphoreGive(wifi_connect_mutex);
+}
+
+EventGroupHandle_t get_wifi_event_group(void) {
+    return wifi_event_group;
+}
+
+bool is_wifi_connected(void) {
+    EventBits_t bits = xEventGroupGetBits(wifi_event_group);
+    return (bits & WIFI_CONNECTED_BIT) != 0;
 }
