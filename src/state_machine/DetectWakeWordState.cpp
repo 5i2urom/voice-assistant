@@ -36,10 +36,18 @@ bool DetectWakeWordState::run()
     reader->rewind(16000);
 
     float *input_buffer = m_nn->getInputBuffer();
+    
     m_audio_processor->get_spectrogram(reader, input_buffer);
+
+    // for (int i = 0; i < 10; i++) {
+    //     ESP_LOGI(TAG, "Input buffer[%d]: %.6f", i, input_buffer[i]);
+    // }
+
     delete reader;
 
     float output = m_nn->predict();
+    ESP_LOGI(TAG, "Output: %.4f", output);
+
     int64_t end = esp_timer_get_time();
 
     float detect_time_ms = (end - start) / 1000.0f;
@@ -66,6 +74,7 @@ bool DetectWakeWordState::run()
     return false;
 }
 
+
 void DetectWakeWordState::exitState()
 {
     delete m_nn;
@@ -74,5 +83,5 @@ void DetectWakeWordState::exitState()
     m_audio_processor = nullptr;
 
     uint32_t free_ram = esp_get_free_heap_size();
-    ESP_LOGI(TAG, "Free RAM after cleanup: %d bytes", free_ram);
+    ESP_LOGI(TAG, "Free RAM after cleanup: %lu bytes", free_ram);
 }

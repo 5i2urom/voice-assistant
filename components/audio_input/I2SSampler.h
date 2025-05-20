@@ -12,7 +12,7 @@
 /**
  * Base Class for both the ADC and I2S sampler
  **/
-class I2SSampler
+    class I2SSampler
 {
 private:
     // audio buffers

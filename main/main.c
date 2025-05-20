@@ -16,6 +16,9 @@
 #include "network-monitor.h"
 #include "wake_word_detector.h"
 
+#include "driver/i2s.h"
+#include "esp_system.h"
+
 #define I2C_MASTER_SCL_IO           GPIO_NUM_22     
 #define I2C_MASTER_SDA_IO           GPIO_NUM_21      
 #define I2C_MASTER_NUM              0                    
@@ -25,6 +28,19 @@
 #define I2C_MASTER_TIMEOUT_MS       1000
 #define SENSOR_TYPE                 DHT_TYPE_DHT11
 #define DHT_GPIO                    GPIO_NUM_4
+
+#define I2S_MIC_SERIAL_CLOCK  26
+#define I2S_MIC_LEFT_RIGHT_CLOCK 25
+#define I2S_MIC_SERIAL_DATA  34
+
+#define I2S_SAMPLE_RATE   16000
+#define I2S_NUM          I2S_NUM_0
+#define I2S_SAMPLE_BITS  32
+#define I2S_BUF_LEN     512
+
+
+static const char *TAG = "INMP441_TEST";
+
 
 int16_t temperature = 0;
 int16_t humidity = 0;
@@ -82,32 +98,53 @@ void dht_task(void *pvParameters) {
     } while (1);
 }
 
+// static i2s_config_t i2s_config = {
+//     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
+//     .sample_rate = 16000,
+//     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+//     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+//     .communication_format = I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB,
+//     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+//     .dma_buf_count = 4,
+//     .dma_buf_len = 64,
+//     .use_apll = true,
+//     .tx_desc_auto_clear = false,
+//     .fixed_mclk = 0
+// };
+
+// static i2s_pin_config_t i2s_pins = {
+//     .bck_io_num = I2S_MIC_SERIAL_CLOCK,
+//     .ws_io_num = I2S_MIC_LEFT_RIGHT_CLOCK,
+//     .data_out_num = I2S_PIN_NO_CHANGE,
+//     .data_in_num = I2S_MIC_SERIAL_DATA
+// };
+
 void app_main(void) {    
-    nvs_flash_init();
-    // lcd_mutex = xSemaphoreCreateMutex();
+    // nvs_flash_init();
+    // // lcd_mutex = xSemaphoreCreateMutex();
 
-    // i2c_master_init();
-    // lcd_init();
-    // lcd_clear();
+    // // i2c_master_init();
+    // // lcd_init();
+    // // lcd_clear();
 
-    // char buffer[21];
-    // memset(empty_str, ' ', 12);
-    // empty_str[12] = '\0';
+    // // char buffer[21];
+    // // memset(empty_str, ' ', 12);
+    // // empty_str[12] = '\0';
 
-    // sprintf(buffer, "Temp  :");
-    // put_led_string(0, 0, buffer);
+    // // sprintf(buffer, "Temp  :");
+    // // put_led_string(0, 0, buffer);
 
-    // sprintf(buffer, "Humi  :");
-    // put_led_string(1, 0, buffer);
+    // // sprintf(buffer, "Humi  :");
+    // // put_led_string(1, 0, buffer);
 
-    // xTaskCreate(dht_task, "DHT Task", 4096, NULL, 3, NULL);
+    // // xTaskCreate(dht_task, "DHT Task", 4096, NULL, 3, NULL);
 
-    init_ble();
-    init_wifi();
+    // init_ble();
+    // init_wifi();
 
-    connect_to_wifi();
+    // connect_to_wifi();
 
-    start_network_monitor();    
+    // start_network_monitor();    
 
     start_wake_word_task();
 

@@ -57,7 +57,11 @@ void I2SSampler::start(i2s_port_t i2s_port, i2s_config_t &i2s_config, TaskHandle
     m_i2s_port = i2s_port;
     m_processor_task_handle = processor_task_handle;
     //install and start i2s driver
-    i2s_driver_install(m_i2s_port, &i2s_config, 4, &m_i2s_queue);
+    esp_err_t err = i2s_driver_install(m_i2s_port, &i2s_config, 4, &m_i2s_queue);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2SSampler", "Failed to install I2S driver: %d", err);
+        return;
+    }
     // set up the I2S configuration from the subclass
     configureI2S();
     // start a task to read samples
