@@ -39,10 +39,6 @@ bool DetectWakeWordState::run()
     
     m_audio_processor->get_spectrogram(reader, input_buffer);
 
-    // for (int i = 0; i < 10; i++) {
-    //     ESP_LOGI(TAG, "Input buffer[%d]: %.6f", i, input_buffer[i]);
-    // }
-
     delete reader;
 
     float output = m_nn->predict();
@@ -60,15 +56,10 @@ bool DetectWakeWordState::run()
         ESP_LOGI(TAG, "Average detection time %.2f ms", m_average_detect_time);
     }
 
-    if (output > 0.95f)
+    if (output >= 0.9f)
     {
-        m_number_of_detections++;
-        if (m_number_of_detections > 1)
-        {
-            m_number_of_detections = 0;
-            ESP_LOGI(TAG, "P(%.2f): Wake word detected", output);
-            return true;
-        }
+        ESP_LOGI(TAG, "P(%.2f): Wake word detected", output);
+        return true;
     }
 
     return false;
